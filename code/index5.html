@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Temperature & Humidity Dashboard | Firebase + ESP8266</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- gauge.js -->
+    <script src="https://cdn.rawgit.com/bernii/gauge.js/1.3.7/dist/gauge.min.js"></script>
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+      // Import Firebase SDK
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        onValue,
+      } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCflwLcZDItrDyvrpAX1jRJOvlV6yN7HEQ",
+        authDomain: "fir-dht-2024-ce7d7.firebaseapp.com",
+        databaseURL:
+          "https://fir-dht-2024-ce7d7-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "fir-dht-2024-ce7d7",
+        storageBucket: "fir-dht-2024-ce7d7.appspot.com",
+        messagingSenderId: "664651908781",
+        appId: "1:664651908781:web:f7db6274f5e661c31ea824",
+        measurementId: "G-HD89KF5LB1",
+      };
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+
+      // Function to update the data on the page
+      // Function to update the data on the page
+      function updateData(logData) {
+        const temperatureElem = document.querySelector(
+          "#temperature > .content"
+        );
+        const humidityElem = document.querySelector("#humidity > .content");
+        const statusElem = document.querySelector("#status > .content");
+        const lightElem = document.querySelector("#light > .content"); // เพิ่มบรรทัดนี้
+        const distanceElem = document.querySelector("#distance > .content"); // เพิ่มบรรทัดนี้
+
+        temperatureElem.innerHTML = logData.temperature + " &deg;C";
+        humidityElem.textContent = logData.humidity + " %";
+        statusElem.textContent = logData.led === "on" ? "ONLINE" : "OFFLINE";
+        lightElem.innerHTML = Math.round(logData.light) + " lx"; // ปัดเลขแสงเป็นจำนวนเต็ม
+        distanceElem.innerHTML = Math.round(logData.distance) + " cm"; // ปัดเลขแสงเป็นจำนวนเต็ม
+
+        const statusDialog = document.querySelector("#status");
+        if (logData.led === "on") {
+          statusDialog.classList.remove("danger");
+          statusDialog.classList.add("success");
+        } else {
+          statusDialog.classList.remove("success");
+          statusDialog.classList.add("danger");
+        }
+        // Update gauge with new temperature value
+      gauge1.set(logData.temperature);
+      gauge2.set(logData.humidity);
+      gauge3.set(logData.light);
+      gauge4.set(logData.distance);
+      }
+
+      // Fetch and display log history
+      function fetchLogHistory() {
+        const logsRef = ref(db, "logs");
+        onValue(logsRef, (snapshot) => {
+          const data = snapshot.val();
+          const logsArray = Object.values(data);
+
+          // Sort logs by time
+          logsArray.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+          // Prepare data for the chart
+          const chartData1 = logsArray.map((log) => ({
+            x: new Date(log.time),
+            y: [log.temperature],
+          }));
+          const chartData2 = logsArray.map((log) => ({
+            x: new Date(log.time),
+            y: [log.humidity],
+          }));
+          const chartData3 = logsArray.map((log) => ({
+            x: new Date(log.time),
+            y: [log.light],
+          }));
+          const chartData4 = logsArray.map((log) => ({
+            x: new Date(log.time),
+            y: [log.distance],
+          }));
+
+          // Render the chart
+          renderChart1(chartData1);
+          renderChart2(chartData2);
+          renderChart3(chartData3);
+          renderChart4(chartData4);
+        });
+      }
+
+      // Function to render the chart using CanvasJS
+      function renderChart1(data) {
+        const chart = new CanvasJS.Chart("chartContainer1", {
+          animationEnabled: true,
+          theme: "light2",
+          title: {
+            text: "Temperature History",
+          },
+          axisX: {
+            title: "Time",
+            valueFormatString: "YYYY/MM/DD HH:mm:ss",
+          },
+          axisY: {
+            title: "Values",
+            prefix: "",
+          },
+          data: [
+            {
+              type: "line",
+              name: "Temperature (°C)",
+              showInLegend: true,
+              dataPoints: data.map((point) => ({
+                x: point.x,
+                y: point.y[0],
+              })),
+            },
+          ],
+        });
+        chart.render();
+      }
+      // Function to render the chart using CanvasJS
+      function renderChart2(data) {
+        const chart = new CanvasJS.Chart("chartContainer2", {
+          animationEnabled: true,
+          theme: "light2",
+          title: {
+            text: "Humidity History",
+          },
+          axisX: {
+            title: "Time",
+            valueFormatString: "YYYY/MM/DD HH:mm:ss",
+          },
+          axisY: {
+            title: "Values",
+            prefix: "",
+          },
+          data: [
+            {
+              type: "line",
+              name: "Humidity (%)",
+              showInLegend: true,
+              dataPoints: data.map((point) => ({
+                x: point.x,
+                y: point.y[0],
+              })),
+            },
+          ],
+        });
+        chart.render();
+      }
+      function renderChart3(data) {
+        const chart = new CanvasJS.Chart("chartContainer3", {
+          animationEnabled: true,
+          theme: "light2",
+          title: {
+            text: "Light History",
+          },
+          axisX: {
+            title: "Time",
+            valueFormatString: "YYYY/MM/DD HH:mm:ss",
+          },
+          axisY: {
+            title: "Values",
+            prefix: "",
+          },
+          data: [
+            {
+              type: "line",
+              name: "Light (lx)",
+              showInLegend: true,
+              dataPoints: data.map((point) => ({
+                x: point.x,
+                y: point.y[0],
+              })),
+            },
+          ],
+        });
+        chart.render();
+      }
+      // Function to render the chart using CanvasJS
+      function renderChart4(data) {
+        const chart = new CanvasJS.Chart("chartContainer4", {
+          animationEnabled: true,
+          theme: "light2",
+          title: {
+            text: "Distance History",
+          },
+          axisX: {
+            title: "Time",
+            valueFormatString: "YYYY/MM/DD HH:mm:ss",
+          },
+          axisY: {
+            title: "Values",
+            prefix: "",
+          },
+          data: [
+            {
+              type: "line",
+              name: "Distance (cm)",
+              showInLegend: true,
+              dataPoints: data.map((point) => ({
+                x: point.x,
+                y: point.y[0],
+              })),
+            },
+          ],
+        });
+        chart.render();
+      }
+
+      // Listen for changes in Firebase Database for the latest log
+      const logsRef = ref(db, "logs");
+      onValue(logsRef, (snapshot) => {
+        const data = snapshot.val();
+        const lastLog = Object.values(data).pop(); // Get the last log entry
+        updateData(lastLog);
+      });
+
+      // Call the function to fetch and display logs
+      fetchLogHistory();
+    </script>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+    <!-- canvasjs -->
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+
+    <!-- Material Design fonts -->
+    <link
+      rel="stylesheet"
+      href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+
+    <!-- Bootstrap -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <style>
+      .dialog {
+        width: 100%;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.12),
+          0 1px 6px 0 rgba(0, 0, 0, 0.12);
+      }
+
+      .dialog > .content {
+        padding: 30px 0;
+        border-radius: 6px 6px 0 0;
+        font-size: 64px;
+        color: rgba(255, 255, 255, 0.84);
+        text-align: center;
+      }
+
+      .dialog.primary > .content {
+        background: #00aa9a;
+      }
+
+      .dialog.success > .content {
+        background: #59b75c;
+      }
+
+      .dialog.info > .content {
+        background: #03a9f4;
+      }
+
+      .dialog.danger > .content {
+        background: #f44336;
+      }
+
+      .dialog > .title {
+        background: #fff;
+        border-radius: 0 0 6px 6px;
+        font-size: 22px;
+        color: rgba(0, 0, 0, 0.87);
+        text-align: center;
+        padding: 10px 0;
+        font-weight: bold;
+      }
+
+      .nav-tabs {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>
+        Temperature &amp; Humidity &amp; Light and Distance Dashboard
+      </h1>
+      <hr />
+
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active">
+          <a href="#overview" aria-controls="home" role="tab" data-toggle="tab"
+            >Overview</a
+          >
+        </li>
+        <li role="presentation">
+          <a
+            href="#history"
+            aria-controls="profile"
+            role="tab"
+            data-toggle="tab"
+            >History</a
+          >
+        </li>
+      </ul>
+
+      <!-- Tab panes -->
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="overview">
+          <div class="row">
+            <div class="col-sm-4">
+                <canvas id="temperatureGauge"></canvas>
+              <div class="dialog primary" id="temperature">
+                <div class="content">00.0 &deg;C</div>
+                <div class="title">Temperature</div>
+              </div>
+              
+            </div>
+            
+            <div class="col-sm-4">
+                <canvas id="humidityGauge"></canvas>
+              <div class="dialog info" id="humidity">
+                <div class="content">00.0 %</div>
+                <div class="title">Humidity</div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+                <canvas id="lightGauge"></canvas>
+              <div class="dialog info" id="light">
+                <div class="content">00.0 lx</div>
+                <div class="title">Light</div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+                <canvas id="distanceGauge"></canvas>
+              <div class="dialog info" id="distance">
+                <!-- เพิ่มส่วนนี้ -->
+                <div class="content">00.0 cm</div>
+                <div class="title">Distance</div>
+              </div>
+            </div>
+            <div class="col-sm-4" style="margin-top: 155px;">
+
+              <div class="dialog success" id="status">
+                <div class="content">???</div>
+                <div class="title">LED</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        
+        
+        <div role="tabpanel" class="tab-pane" id="history">
+          <div id="chartContainer1" style="height: 300px; width: 100%"></div>
+          <div style="margin-top: 100px;"></div>
+          <div id="chartContainer2" style="height: 300px; width: 100%"></div>
+          <div style="margin-top: 100px;"></div>
+          <div id="chartContainer3" style="height: 300px; width: 100%"></div>
+          <div style="margin-top: 100px;"></div>
+          <div id="chartContainer4" style="height: 300px; width: 100%"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Gauge.js setup for temperature
+      const opts1 = {
+        angle: 0, // The span of the gauge arc
+        lineWidth: 0.44, // The line thickness
+        radiusScale: 1, // Relative radius
+        pointer: {
+          length: 0.6, // Relative to gauge radius
+          strokeWidth: 0.035, // The thickness
+          color: "#000000", // Fill color
+        },
+        limitMax: false, // If false, max value increases automatically if value > maxValue
+        limitMin: false, // If true, the min value of the gauge will be fixed
+        colorStart: "#6FADCF", // Colors
+        colorStop: "#8FC0DA", // just experiment with them
+        strokeColor: "#E0E0E0", // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true, // High resolution support
+
+        staticZones: [
+          { strokeStyle: "#F03E3E", min: 66.67, max: 100 }, // Red zone
+          { strokeStyle: "#FFDD00", min: 33.34, max: 66.66 }, // Yellow zone
+          { strokeStyle: "#30B32D", min: 0, max: 33.33 }, // Green zone
+        ],
+      };
+      const opts2 = {
+        angle: 0, // The span of the gauge arc
+        lineWidth: 0.44, // The line thickness
+        radiusScale: 1, // Relative radius
+        pointer: {
+          length: 0.6, // Relative to gauge radius
+          strokeWidth: 0.035, // The thickness
+          color: "#000000", // Fill color
+        },
+        limitMax: false, // If false, max value increases automatically if value > maxValue
+        limitMin: false, // If true, the min value of the gauge will be fixed
+        colorStart: "#6FADCF", // Colors
+        colorStop: "#8FC0DA", // just experiment with them
+        strokeColor: "#E0E0E0", // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true, // High resolution support
+
+        staticZones: [
+          { strokeStyle: "#F03E3E", min: 6667, max: 10000 }, // Red zone
+          { strokeStyle: "#FFDD00", min: 3334, max: 6666 }, // Yellow zone
+          { strokeStyle: "#30B32D", min: 0, max: 3333 }, // Green zone
+        ],
+      };
+      const opts3 = {
+        angle: 0, // The span of the gauge arc
+        lineWidth: 0.44, // The line thickness
+        radiusScale: 1, // Relative radius
+        pointer: {
+          length: 0.6, // Relative to gauge radius
+          strokeWidth: 0.035, // The thickness
+          color: "#000000", // Fill color
+        },
+        limitMax: false, // If false, max value increases automatically if value > maxValue
+        limitMin: false, // If true, the min value of the gauge will be fixed
+        colorStart: "#6FADCF", // Colors
+        colorStop: "#8FC0DA", // just experiment with them
+        strokeColor: "#E0E0E0", // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true, // High resolution support
+
+        staticZones: [
+          { strokeStyle: "#F03E3E", min: 334, max: 500 }, // Red zone
+          { strokeStyle: "#FFDD00", min: 167, max: 333 }, // Yellow zone
+          { strokeStyle: "#30B32D", min: 0, max: 166 }, // Green zone
+        ],
+      };
+
+      const target1 = document.getElementById("temperatureGauge"); // canvas element
+      const gauge1 = new Gauge(target1).setOptions(opts1); // create gauge!
+
+      gauge1.maxValue = 100; // set max gauge value
+      gauge1.setMinValue(0); // Prefer setter over gauge.minValue = 0
+      gauge1.animationSpeed = 32; // set animation speed (32 is default value)
+      gauge1.set(0); // set initial value
+
+      const target2 = document.getElementById("humidityGauge"); // canvas element
+      const gauge2 = new Gauge(target2).setOptions(opts1); // create gauge!
+
+      gauge2.maxValue = 100; // set max gauge value
+      gauge2.setMinValue(0); // Prefer setter over gauge.minValue = 0
+      gauge2.animationSpeed = 32; // set animation speed (32 is default value)
+      gauge2.set(0); // set initial value
+
+      const target3 = document.getElementById("lightGauge"); // canvas element
+      const gauge3 = new Gauge(target3).setOptions(opts2); // create gauge!
+
+      gauge3.maxValue = 10000; // set max gauge value
+      gauge3.setMinValue(0); // Prefer setter over gauge.minValue = 0
+      gauge3.animationSpeed = 32; // set animation speed (32 is default value)
+      gauge3.set(0); // set initial value
+
+      const target4 = document.getElementById("distanceGauge"); // canvas element
+      const gauge4 = new Gauge(target4).setOptions(opts3); // create gauge!
+
+      gauge4.maxValue = 500; // set max gauge value
+      gauge4.setMinValue(0); // Prefer setter over gauge.minValue = 0
+      gauge4.animationSpeed = 32; // set animation speed (32 is default value)
+      gauge4.set(0); // set initial value
+    </script>
+  </body>
+</html>

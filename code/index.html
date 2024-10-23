@@ -1,0 +1,264 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Temperature & Humidity Dashboard | Firebase + ESP8266</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Firebase SDK (Modular) -->
+  <script type="module">
+    // Import Firebase SDK
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+  apiKey: "AIzaSyCflwLcZDItrDyvrpAX1jRJOvlV6yN7HEQ",
+  authDomain: "fir-dht-2024-ce7d7.firebaseapp.com",
+  databaseURL: "https://fir-dht-2024-ce7d7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "fir-dht-2024-ce7d7",
+  storageBucket: "fir-dht-2024-ce7d7.appspot.com",
+  messagingSenderId: "664651908781",
+  appId: "1:664651908781:web:f7db6274f5e661c31ea824",
+  measurementId: "G-HD89KF5LB1"
+};
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Function to update the data on the page
+    // Function to update the data on the page
+    function updateData(logData) {
+      const temperatureElem = document.querySelector("#temperature > .content");
+      const humidityElem = document.querySelector("#humidity > .content");
+      const statusElem = document.querySelector("#status > .content");
+      const lightElem = document.querySelector("#light > .content"); // เพิ่มบรรทัดนี้
+      const distanceElem = document.querySelector("#distance > .content"); // เพิ่มบรรทัดนี้
+
+      temperatureElem.innerHTML = logData.temperature + " &deg;C";
+      humidityElem.textContent = logData.humidity + " %";
+      statusElem.textContent = logData.led === "on" ? "ONLINE" : "OFFLINE";
+      lightElem.innerHTML = Math.round(logData.light) + " lx"; // ปัดเลขแสงเป็นจำนวนเต็ม
+      distanceElem.innerHTML = Math.round(logData.distance) + " cm"; // ปัดเลขแสงเป็นจำนวนเต็ม
+
+      const statusDialog = document.querySelector("#status");
+      if (logData.led === "on") {
+        statusDialog.classList.remove("danger");
+        statusDialog.classList.add("success");
+      } else {
+        statusDialog.classList.remove("success");
+        statusDialog.classList.add("danger");
+      }
+    }
+
+
+    // Fetch and display log history
+    function fetchLogHistory() {
+      const logsRef = ref(db, 'logs');
+      onValue(logsRef, (snapshot) => {
+        const data = snapshot.val();
+        const logsArray = Object.values(data);
+
+        // Sort logs by time
+        logsArray.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        // Prepare data for the chart
+        const chartData = logsArray.map(log => ({
+          x: new Date(log.time),
+          y: [log.temperature, log.humidity, log.light, log.distance]
+        }));
+
+        // Render the chart
+        renderChart(chartData);
+      });
+    }
+
+    // Function to render the chart using CanvasJS
+    function renderChart(data) {
+      const chart = new CanvasJS.Chart("chartContainer", {
+        animationEnabled: true,
+        theme: "light2",
+        title: {
+          text: "Temperature and Humidity History"
+        },
+        axisX: {
+          title: "Time",
+          valueFormatString: "YYYY/MM/DD HH:mm:ss"
+        },
+        axisY: {
+          title: "Values",
+          prefix: ""
+        },
+        data: [{
+          type: "line",
+          name: "Temperature (°C)",
+          showInLegend: true,
+          dataPoints: data.map(point => ({
+            x: point.x,
+            y: point.y[0]
+          }))
+        }, {
+          type: "line",
+          name: "Humidity (%)",
+          showInLegend: true,
+          dataPoints: data.map(point => ({
+            x: point.x,
+            y: point.y[1]
+          }))
+        }, {
+          type: "line",
+          name: "Light (lx)",
+          showInLegend: true,
+          dataPoints: data.map(point => ({
+            x: point.x,
+            y: point.y[2]
+          }))
+        }, {
+          type: "line",
+          name: "Distance (cm)",
+          showInLegend: true,
+          dataPoints: data.map(point => ({
+            x: point.x,
+            y: point.y[3]
+          }))
+        }]
+      });
+      chart.render();
+    }
+
+    // Listen for changes in Firebase Database for the latest log
+    const logsRef = ref(db, 'logs');
+    onValue(logsRef, (snapshot) => {
+      const data = snapshot.val();
+      const lastLog = Object.values(data).pop(); // Get the last log entry
+      updateData(lastLog);
+    });
+
+    // Call the function to fetch and display logs
+    fetchLogHistory();
+  </script>
+
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <!-- canvasjs -->
+  <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+
+  <!-- Material Design fonts -->
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+  <style>
+    .dialog {
+      width: 100%;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.12), 0 1px 6px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .dialog>.content {
+      padding: 30px 0;
+      border-radius: 6px 6px 0 0;
+      font-size: 64px;
+      color: rgba(255, 255, 255, 0.84);
+      text-align: center;
+    }
+
+    .dialog.primary>.content {
+      background: #00aa9a;
+    }
+
+    .dialog.success>.content {
+      background: #59b75c;
+    }
+
+    .dialog.info>.content {
+      background: #03a9f4;
+    }
+
+    .dialog.danger>.content {
+      background: #f44336;
+    }
+
+    .dialog>.title {
+      background: #FFF;
+      border-radius: 0 0 6px 6px;
+      font-size: 22px;
+      color: rgba(0, 0, 0, 0.87);
+      text-align: center;
+      padding: 10px 0;
+      font-weight: bold;
+    }
+
+    .nav-tabs {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Temperature &amp; Humidity Dashboard <small>Firebase + ESP8266</small></h1>
+    <hr />
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+      <li role="presentation" class="active"><a href="#overview" aria-controls="home" role="tab" data-toggle="tab">Overview</a></li>
+      <li role="presentation"><a href="#history" aria-controls="profile" role="tab" data-toggle="tab">History</a></li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="overview">
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="dialog primary" id="temperature">
+              <div class="content">00.0 &deg;C</div>
+              <div class="title">Temperature</div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="dialog info" id="humidity">
+              <div class="content">00.0 %</div>
+              <div class="title">Humidity</div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="dialog info" id="light"> <!-- เพิ่มส่วนนี้ -->
+              <div class="content">00.0 lx</div>
+              <div class="title">Light</div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="dialog info" id="distance"> <!-- เพิ่มส่วนนี้ -->
+              <div class="content">00.0 cm</div>
+              <div class="title">Distance</div>
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="dialog success" id="status">
+              <div class="content">???</div>
+              <div class="title">LED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div role="tabpanel" class="tab-pane" id="history">
+        <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

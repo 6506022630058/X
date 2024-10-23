@@ -1,0 +1,45 @@
+http://arduino.esp8266.com/stable/package_esp8266com_index.json
+
+โหลด js
+https://nodejs.org/en
+
+โหลด node-red
+npm install -g --unsafe-perm node-red
+
+รัน node-red
+node-red
+
+กด 3 ขีดขวาบน 
+กด manage palette 
+กด install
+พิม node-red-dashboard
+
+broker.hivemq.com
+broker.emqx.io
+test.mosquitto.org
+mqtt.eclipse.org
+mqtt.byt3.me
+mqtt.flespi.io
+
+sensor แสง
+vcc 3v
+gnd gnd
+scl d1
+sda d2
+
+sensor ระยะ
+gnd gnd
+echo d5
+trig d6
+vcc 5v
+
+บรรทัดที่ต้องแก้
+
+26,27
+31
+116
+141
+274
+276
+278
+280
