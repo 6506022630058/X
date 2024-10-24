@@ -1,5 +1,16 @@
 http://arduino.esp8266.com/stable/package_esp8266com_index.json
 
+แตกไฟล์ library.rar
+เข้าไปใน folder "library" ที่แตกมา
+copy ทุกตัวไปยัง This PC/Documents/Arduino/libraries
+
+ใน arduino ห้ามกด update library ขวาล่าง
+เพราะมันจะเปลี่ยน library "firebase master" เป็น "firebase client"
+ถ้าเผลอทำไปแล้วให้กดลบตัว "firebase client" แล้วไป copy ตัว "firebase master" มาวาง
+
+เช็ค js
+node -v
+
 โหลด js
 https://nodejs.org/en
 
