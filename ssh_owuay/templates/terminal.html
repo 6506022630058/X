@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSH Terminal</title>
+</head>
+<body>
+    <h1>Terminal Page</h1>
+    <a href="{{ url_for('config') }}">Configure Page</a>
+    <a style="margin-left: 100px;" href="{{ url_for('index') }}">Login Page</a>
+    <form style="margin-top: 10px;" method="POST" action="{{ url_for('execute') }}">
+        <input type="text" name="command" required>
+        <input type="submit" value="Execute">
+    </form>
+    <form style="margin-top: 2px; margin-left: 180px;" method="POST" action="{{ url_for('clear_output') }}">
+        <input type="submit" value="Clear Output">
+    </form>
+    <pre>{{ output }}</pre>
+</body>
+</html>

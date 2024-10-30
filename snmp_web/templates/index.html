@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNMP Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function getSNMPInfo() {
+            const ip = document.getElementById('ip').value;
+            const ro = document.getElementById('ro').value;
+            const rw = document.getElementById('rw').value;
+
+            if (!ip || !ro || !rw) {
+                alert('Please fill in all fields.');
+                return;
+            }
+            socket.emit('get_snmp_info', { ip, ro, rw });
+        }
+
+        function getOIDValue() {
+            const ip = document.getElementById('ip').value;
+            const ro = document.getElementById('ro').value;
+            const oid = document.getElementById('oid').value;
+
+            if (!oid) {
+                alert('Please enter an OID.');
+                return;
+            }
+            socket.emit('get_oid_value', { ip, ro, oid });
+        }
+
+        function clearOIDValue() {
+            document.getElementById('oidOutput').innerHTML = '';
+            document.getElementById('oid').value = '';
+        }
+
+        function toggleInterfaceStatus(ip, rw, index, currentStatus) {
+            const newStatus = currentStatus === '1' ? '2' : '1'; // Toggle between Up (1) and Down (2)
+            socket.emit('toggle_interface_status', { ip, rw, index, current_status: currentStatus });
+        }
+
+        socket.on('update_interface_data', function(data) {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+
+            if (data.error) {
+                output.innerHTML = `<p style="color:red;">${data.error}</p>`;
+                return;
+            }
+
+            output.innerHTML += `<p>System Name: ${data.sysName}</p>`;
+            output.innerHTML += `<p>System Description: ${data.sysDescr}</p>`;
+
+            for (const [key, value] of Object.entries(data)) {
+                if (key.startsWith('interface_')) {
+                    const status = value.admin_status === '1' ? 'Up' : 'Down';
+                    const color = status === 'Up' ? 'green' : 'red';
+
+                    output.innerHTML += `
+                        <p>
+                            ${value.name}: <span style="color:${color};" id="status-${value.index}">${status}</span>
+                            <button onclick="toggleInterfaceStatus('${data.ip}', '${data.rw}', ${value.index}, '${value.admin_status}')">Shutdown</button>
+                            <button onclick="toggleInterfaceStatus('${data.ip}', '${data.rw}', ${value.index}, '${value.admin_status}')">No Shutdown</button>
+                        </p>`;
+                }
+            }
+        });
+
+        socket.on('update_oid_value', function(data) {
+            const oidOutput = document.getElementById('oidOutput');
+            if (data.error) {
+                oidOutput.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            } else {
+                oidOutput.innerHTML = `<p>OID: ${data.oid}, Value: ${data.value}</p>`;
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>SNMP Interface</h1>
+    <label for="ip">IP Address:</label>
+    <input type="text" id="ip" value="10.4.15.102"><br>
+    <label for="ro">RO Community:</label>
+    <input type="text" id="ro" value="public"><br>
+    <label for="rw">RW Community:</label>
+    <input type="text" id="rw" value="private"><br>
+    <button onclick="getSNMPInfo()">Connect SNMP</button>
+    
+    <h2>Get OID Value</h2>
+    <label for="oid">OID:</label>
+    <input type="text" id="oid"><br>
+    <button onclick="getOIDValue()">GET</button>
+    <button onclick="clearOIDValue()">CLEAR</button>
+    <div id="oidOutput"></div>
+    
+    <div id="output"></div>
+</body>
+</html>

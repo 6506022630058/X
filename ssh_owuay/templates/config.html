@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration</title>
+</head>
+<body>
+    <h1>Configuration Page</h1>
+    <a href="{{ url_for('terminal') }}">Terminal Page</a>
+    <a style="margin-left: 100px;" href="{{ url_for('index') }}">Login Page</a>
+    <h2>Hostname Configuration</h2>
+    <form method="POST">
+        <input type="hidden" name="form_type" value="hostname">
+        <label for="hostname">Hostname:</label>
+        <input type="text" name="hostname" required>
+        <input type="submit" value="Set Hostname">
+    </form>
+
+    <h2>IP Address Configuration</h2>
+    <form method="POST">
+        <input type="hidden" name="form_type" value="ip_address">
+        <label for="interface">Select Interface:</label>
+        <select name="interface" required>
+            <option value="">Select Interface</option>
+            {% for interface in interfaces %}
+                <option value="{{ interface }}">{{ interface }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label for="ipv4">IPv4 Address:</label>
+        <input type="text" name="ipv4" required><br>
+
+        <label for="netmask">Netmask:</label>
+        <input type="text" name="netmask" required><br>
+
+        <label for="no_switchport">No Switchport:</label>
+        <input type="checkbox" name="no_switchport" value="1"><br>
+
+        <input type="submit" value="Configure IP">
+    </form>
+
+    <h2>Disable/Enable Interface</h2>
+    <form method="POST">
+        <input type="hidden" name="form_type" value="shutdown">
+        <label for="interface">Select Interface:</label>
+        <select name="interface" required>
+            <option value="">Select Interface</option>
+            {% for interface in interfaces %}
+                <option value="{{ interface }}">{{ interface }}</option>
+            {% endfor %}
+        </select><br>
+
+        <input type="submit" value="Shutdown">
+    </form>
+
+    <form method="POST">
+        <input type="hidden" name="form_type" value="noshutdown">
+        <label for="interface">Select Interface:</label>
+        <select name="interface" required>
+            <option value="">Select Interface</option>
+            {% for interface in interfaces %}
+                <option value="{{ interface }}">{{ interface }}</option>
+            {% endfor %}
+        </select><br>
+
+        <input type="submit" value="No Shutdown">
+    </form>
+</body>
+</html>
