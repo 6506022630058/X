@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNMP Port Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>SNMP Port Control</h1>
+        <input type="text" id="ip" placeholder="Device IP Address" />
+        <button id="load-device-info">Load Device Info</button>
+
+        <h2 id="device-name">Device Name: </h2>
+        <h2 id="device-uptime">Uptime: Loading...</h2>
+
+        <h2>Port Control</h2>
+        <div id="switch-ports"></div>
+
+        <h2>Custom OID Query</h2>
+        <input type="text" id="custom-oid" placeholder="Enter OID" />
+        <button id="get-oid">GET</button>
+        <h3 id="oid-value">Value: </h3>
+
+        <h2>Log Messages</h2>
+        <div id="log-messages" style="border: 1px solid #ccc; padding: 10px; max-height: 150px; overflow-y: auto;">
+        </div>
+        <button id="clear-log">Clear Log</button>
+    </div>
+
+    <script>
+        async function fetchUptime() {
+            const ip = document.getElementById('ip').value;
+            const response = await fetch(`/snmp/uptime/${ip}/private`);
+            const data = await response.json();
+            document.getElementById('device-uptime').textContent = data.error ? 
+                "Uptime: Error loading uptime" : `Uptime: ${data.uptime}`;
+        }
+
+        document.getElementById('load-device-info').addEventListener('click', async () => {
+            const ip = document.getElementById('ip').value;
+            const community = 'private';
+
+            document.getElementById('log-messages').innerHTML = '';
+            const deviceResponse = await fetch(`/snmp/device-name/${ip}/${community}`);
+            const deviceData = await deviceResponse.json();
+
+            document.getElementById('device-name').textContent = 
+                deviceData.error ? "Error loading device name" : `Device Name: ${deviceData.device_name}`;
+
+            setInterval(fetchUptime, 5000);
+
+            const portsResponse = await fetch(`/snmp/ports/${ip}/${community}`);
+            const ports = await portsResponse.json();
+            const switchPortsDiv = document.getElementById('switch-ports');
+            switchPortsDiv.innerHTML = '';
+
+            for (const [portIndex, portData] of Object.entries(ports)) {
+                const portDiv = document.createElement('div');
+                const portName = portData.name || 'Unknown Port';
+                portDiv.className = portData.status === '1' ? 'port up' : 'port down';
+                portDiv.textContent = `Port ${portName} (Port ${portIndex}) - ${portData.status === '1' ? 'Up' : 'Down'}`;
+                portDiv.dataset.port = portIndex;
+                portDiv.dataset.name = portName;
+                portDiv.addEventListener('click', togglePort);
+                switchPortsDiv.appendChild(portDiv);
+            }
+        });
+
+        async function togglePort(event) {
+            const portDiv = event.currentTarget;
+            const port = portDiv.dataset.port;
+            const portName = portDiv.dataset.name;
+            const ip = document.getElementById('ip').value;
+            const community = 'private';
+            const newStatus = portDiv.classList.contains('up') ? 'down' : 'up';
+
+            const response = await fetch(`/snmp/control/${ip}/${community}/${port}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            const result = await response.json();
+
+            const message = result.error ? result.error : `Port ${portName} (${port}) turned ${newStatus}`;
+            logMessage(message);
+
+            if (!result.error) {
+                portDiv.classList.toggle('up');
+                portDiv.classList.toggle('down');
+                portDiv.textContent = `Port ${portName} (Port ${port}) - ${newStatus === 'up' ? 'Up' : 'Down'}`;
+            }
+        }
+
+        document.getElementById('get-oid').addEventListener('click', async () => {
+            const ip = document.getElementById('ip').value;
+            const oid = document.getElementById('custom-oid').value;
+            const community = 'private';
+
+            if (!oid) {
+                alert("Please enter an OID.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/snmp/custom-oid/${ip}/${community}/${oid}`);
+                const data = await response.json();
+                document.getElementById('oid-value').textContent = data.error ?
+                    `Error: ${data.error}` : `Value: ${data.value}`;
+            } catch (error) {
+                console.error("Failed to fetch OID:", error);
+            }
+        });
+
+        function logMessage(message) {
+            const logMessagesDiv = document.getElementById('log-messages');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            logMessagesDiv.appendChild(logEntry);
+        }
+
+        document.getElementById('clear-log').addEventListener('click', () => {
+            document.getElementById('log-messages').innerHTML = '';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    color: #333;
+}
+
+input[type="text"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.port {
+    padding: 10px;
+    margin: 5px 0;
+    background: #ddd;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+.port.up {
+    background-color: green;
+    color: white;
+}
+
+.port.down {
+    background-color: red;
+    color: white;
+}
+
